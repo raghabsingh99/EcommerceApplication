@@ -1,0 +1,52 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: ORDER-SERVICE
+
+  # ✅ MUST be top-level (NOT under spring.application)
+  config:
+    import: optional:configserver:http://localhost:9296
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/orderdb
+    username: root
+    password: Scientist12!
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  cloud:
+    config:
+      enabled: true   # keep enabled since you are using config server
+
+logging:
+  pattern:
+    level: "%5p [traceId=%X{traceId} spanId=%X{spanId}] %c : %m%n"
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0   # 100% traces (DEV only)
+
+  observations:
+    http:
+      server:
+        enabled: true
+
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
