@@ -8,7 +8,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/productdb
     username: root
-    password: YOUR_PASSWORD
+    password: Scientist12!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
