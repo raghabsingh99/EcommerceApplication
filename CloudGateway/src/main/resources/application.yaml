@@ -1,29 +1,90 @@
 server:
-  port: 9090
+  port: 9091
 
 spring:
   application:
     name: API-GATEWAY
+
+  # Redis configuration (for RequestRateLimiter)
+  redis:
+    host: localhost
+    port: 6379
+
+  # Spring Cloud Config Server
   config:
     import: configserver:http://localhost:9296
 
   cloud:
     gateway:
+
+      # Enable Eureka-based dynamic routing
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
       routes:
+
+        # =========================
+        # ORDER SERVICE
+        # =========================
         - id: ORDER-SERVICE
           uri: lb://ORDER-SERVICE
           predicates:
             - Path=/order/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: ORDER-SERVICE
+                fallbackUri: forward:/orderServiceFallback
 
-
+        # =========================
+        # PAYMENT SERVICE
+        # =========================
         - id: PAYMENT-SERVICE
           uri: lb://PAYMENT-SERVICE
           predicates:
             - Path=/payment/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: PAYMENT-SERVICE
+                fallbackUri: forward:/paymentServiceFallback
 
-
+        # =========================
+        # PRODUCT SERVICE
+        # =========================
         - id: PRODUCT-SERVICE
           uri: lb://PRODUCT-SERVICE
           predicates:
             - Path=/product/**
+          filters:
+            - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 1
+                redis-rate-limiter.burstCapacity: 1
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: PRODUCT-SERVICE
+                fallbackUri: forward:/productServiceFallback
 
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.condition.RequestCondition;
 
 @RestController
-@RequestMapping("/product")
 public class ProductController {
 
     @Autowired

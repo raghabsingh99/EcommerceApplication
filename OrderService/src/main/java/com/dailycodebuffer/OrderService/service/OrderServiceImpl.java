@@ -78,32 +78,50 @@ public class OrderServiceImpl implements OrderService {
                 new CustomException("Order not found for the order id", "NOT_FOUND", 404));
 
         log.info("Invoking product service to fetch the product");
-        ProductResponse productResponse =
-                restTemplate.getForObject(
-                        "http://PRODUCT-SERVICE/product/" + order.getProductId(),
-                        ProductResponse.class
-                );
-
+        ProductResponse productResponse = null;
+        try {
+            productResponse = restTemplate.getForObject(
+                    "http://PRODUCT-SERVICE/" + order.getProductId(),
+                    ProductResponse.class
+            );
+        } catch (Exception e) {
+            log.error("Product service call failed", e);
+        }
         log.info("Getting payment infor from payment service");
-        PaymentResponse paymentResponse =
-                restTemplate.getForObject(
-                        "http://PAYMENT-SERVICE/payment/order/" + order.getId(),
-                        PaymentResponse.class
-                );
+        PaymentResponse paymentResponse = null;
+
+        try {
+            paymentResponse = restTemplate.getForObject(
+                    "http://PAYMENT-SERVICE/payment/order/" + order.getId(),
+                    PaymentResponse.class
+            );
+        } catch (Exception e) {
+            log.warn("Payment service unavailable for order {}", order.getId());
+        }
 
 
-        OrderResponse.ProductDetails productDetails = OrderResponse.ProductDetails.builder()
-                .productName(productResponse.getProductName())
-                .productId(productResponse.getProductId())
-                .price(productResponse.getPrice())
-                .quantity(productResponse.getQuantity())
-                .build();
-        OrderResponse.PaymentDetails paymentDetails = OrderResponse.PaymentDetails.builder()
-                .paymentId(paymentResponse.getPaymentId())
-                .paymentMode(paymentResponse.getPaymentMode())
-                .paymentStatus(paymentResponse.getStatus())
-                .paymentDate(paymentResponse.getPaymentDate())
-                .build();
+        OrderResponse.ProductDetails productDetails = null;
+
+        if (productResponse != null) {
+            productDetails = OrderResponse.ProductDetails.builder()
+                    .productName(productResponse.getProductName())
+                    .productId(productResponse.getProductId())
+                    .price(productResponse.getPrice())
+                    .quantity(productResponse.getQuantity())
+                    .build();
+        }
+
+        OrderResponse.PaymentDetails paymentDetails = null;
+
+        if (paymentResponse != null) {
+            paymentDetails = OrderResponse.PaymentDetails.builder()
+                    .paymentId(paymentResponse.getPaymentId())
+                    .paymentMode(paymentResponse.getPaymentMode())
+                    .paymentStatus(paymentResponse.getStatus())
+                    .paymentDate(paymentResponse.getPaymentDate())
+                    .build();
+        }
+
 
 
         OrderResponse orderResponse = OrderResponse.builder()
